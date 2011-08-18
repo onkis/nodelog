@@ -6,16 +6,20 @@ var fs = require('fs');
 var path = require('path');
 var repl = require('repl');
 
+var TwilioClient = require('twilio').Client,
+twilioClient = new TwilioClient(config.sid, config.authToken, "s-irc01.eloquacorp.com");
+var phoneNumbers = require('./phone').phone;
+
 sys.puts(sys.inspect(config));
 
 var logFile, day;
 function writeLog(text) {
-  var date = new Date;
+  var date = new Date();
   var today = [
      date.getFullYear(),
      // Poor man's zero padding FTW
      ('0'+(date.getMonth()+1)).substr(-2),
-     ('0'+date.getDate()).substr(-2),
+     ('0'+date.getDate()).substr(-2)
   ].join('-');
 
   if (!logFile || day !== today) {
@@ -49,20 +53,23 @@ client.addListener('JOIN', function(prefix) {
 });
 
 client.addListener('PART', function(prefix) {
+  console.log('part listner');
+  
   var user = irc.user(prefix);
   writeLog(user+' has left the channel');
 });
 
 client.addListener('DISCONNECT', function() {
-  puts('Disconnected, re-connect in 5s');
+  
+  sys.puts('Disconnected, re-connect in 5s');
   setTimeout(function() {
-    puts('Trying to connect again ...');
+    sys.puts('Trying to connect again ...');
 
     inChannel = false;
     client.connect(config.user);
     setTimeout(function() {
       if (!inChannel) {
-        puts('Re-connect timeout');
+        sys.puts('Re-connect timeout');
         client.disconnect();
         client.emit('DISCONNECT', 'timeout');
       }
@@ -84,6 +91,15 @@ client.addListener('PRIVMSG', function(prefix, channel, text) {
 
   var user = irc.user(prefix);
   writeLog(user+': '+text);
+  var targetResult = text.match(/(.*)\!\:/) ;
+  var targetUser = targetResult ? targetResult[1] : null;
+  console.log(targetUser);
+  console.log(phoneNumbers[targetUser]);
+  if(targetUser && phoneNumbers[targetUser]){
+    var phoneNumber = phoneNumbers[targetUser];
+    twilioClient.sendSms('+14155992671', phoneNumber, user+" "text);
+  }
+
 });
 
 repl.start("logbot> ");
