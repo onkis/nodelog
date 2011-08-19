@@ -5,10 +5,14 @@ var irc = require('./lib/irc');
 var fs = require('fs');
 var path = require('path');
 var repl = require('repl');
-
-var TwilioClient = require('twilio').Client,
-twilioClient = new TwilioClient(config.sid, config.authToken, "s-irc01.eloquacorp.com");
-var phoneNumbers = require('./phone').phone;
+var twitter = require('twitter');
+var twit = new twitter({
+    consumer_key: config.consumerKey,
+    consumer_secret: config.consumerSecret,
+    access_token_key: config.accessToken,
+    access_token_secret:config.accessTokenSecret
+});
+var twitterHandles = require('./twitter_handles').twitterHandles;
 
 sys.puts(sys.inspect(config));
 
@@ -91,13 +95,20 @@ client.addListener('PRIVMSG', function(prefix, channel, text) {
 
   var user = irc.user(prefix);
   writeLog(user+': '+text);
-  var targetResult = text.match(/(.*)\!\:/) ;
+  var targetResult = text.match(/(.*)\:/) ;
   var targetUser = targetResult ? targetResult[1] : null;
-  console.log(targetUser);
-  console.log(phoneNumbers[targetUser]);
-  if(targetUser && phoneNumbers[targetUser]){
-    var phoneNumber = phoneNumbers[targetUser];
-    twilioClient.sendSms('+14155992671', phoneNumber, user+" "text);
+
+  
+  if(targetUser && twitterHandles[targetUser]){
+    var twitUser = twitterHandles[targetUser];
+    var message = user+" "+text;
+    message = message.substring(0,140);
+    twit.post('/direct_messages/new.json',
+              {screen_name: twitUser, text: message}, 
+              "application/json", 
+              function(cb){
+              });
+
   }
 
 });
