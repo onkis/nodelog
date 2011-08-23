@@ -1,8 +1,8 @@
 exports.config = {
-  host: 'localhost',
+  host: 's-irc01.eloquacorp.com',
   port: 6667,
   user: 'nodelog',
-  channel: '#nodejs',
+  channel: '#developers',
   logUrl: 'http://nodejs.debuggable.com/',
   logPath: 'log'
 };
